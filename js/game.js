@@ -101,9 +101,12 @@
   // ---------------------------------------------------------------
   const keeper = {
     phase: 'aim',         // aim -> ready -> shoot -> result
-    aimX: 0.5,            // куда целимся (0..1 по воротам)
-    keeperX: 0.5,         // позиция вратаря (0..1)
-    diveTo: 0.5,
+    aimX: 0.5,            // куда целимся по горизонтали (0..1 по воротам)
+    aimY: 0.5,            // куда целимся по вертикали (0..1 по воротам)
+    keeperX: 0.5,         // позиция вратаря по горизонтали (0..1)
+    keeperY: 0.6,         // позиция вратаря по вертикали (0..1)
+    diveTo: 0.5,          // куда прыгает по X
+    diveY: 0.6,           // куда прыгает по Y
     t: 0,                 // таймер анимаций
     result: null,         // 'goal' | 'save'
     armWave: 0,
@@ -247,20 +250,21 @@
   function startKeeper() {
     state = STATE.KEEPER;
     keeper.phase = 'aim';
-    keeper.aimX = 0.5;
-    keeper.keeperX = 0.5;
+    keeper.aimX = 0.5; keeper.aimY = 0.5;
+    keeper.keeperX = 0.5; keeper.keeperY = 0.6;
     keeper.t = 0;
     keeper.result = null;
     keeper.armWave = 0;
     ball.x = 100; ball.y = FLOOR_Y - 30; ball.vy = 0; ball.vx = 0; ball.spin = 0;
-    showBanner('ПЕНАЛЬТИ!<br>👆 целься в ворота');
+    showBanner('ПЕНАЛЬТИ!<br>👆 ткни в угол ворот');
   }
 
   function keeperTap(wx, wy) {
     if (keeper.phase === 'aim') {
-      // тап по воротам -> ставим прицел
+      // тап в любую точку ворот -> ставим прицел (X и Y)
       if (wy < GOAL.y + GOAL.h + 30) {
-        keeper.aimX = Math.max(0.12, Math.min(0.88, (wx - GOAL.x) / GOAL.w));
+        keeper.aimX = Math.max(0.08, Math.min(0.92, (wx - GOAL.x) / GOAL.w));
+        keeper.aimY = Math.max(0.12, Math.min(0.88, (wy - GOAL.y) / GOAL.h));
         keeper.phase = 'ready';
         showBanner('БЕЙ! 👟');
       }
@@ -268,16 +272,24 @@
       // удар!
       keeper.phase = 'shoot';
       keeper.t = 0;
-      keeper.diveTo = Math.random() < 0.5 ? keeper.aimX : (Math.random()); // вратарь иногда угадывает
-      // 50/50: гол, если вратарь не дотянулся до точки прицела
-      const reach = 0.22;
-      const willSave = Math.abs(keeper.diveTo - keeper.aimX) < reach && Math.random() < 0.5;
-      keeper.result = willSave ? 'save' : 'goal';
       keeper.shotFrom = { x: ball.x, y: ball.y };
+      // мяч летит ТОЧНО в выбранную точку
       keeper.shotTo = {
         x: GOAL.x + keeper.aimX * GOAL.w,
-        y: GOAL.y + GOAL.h * 0.5
+        y: GOAL.y + keeper.aimY * GOAL.h
       };
+      // СНАЧАЛА решаем исход 50/50, ПОТОМ ставим вратаря согласованно:
+      keeper.result = Math.random() < 0.5 ? 'goal' : 'save';
+      if (keeper.result === 'save') {
+        keeper.diveTo = keeper.aimX;                 // прыгает ровно на мяч — ловит
+        keeper.diveY = keeper.aimY;                  // и по высоте тянется к мячу
+      } else {
+        // ГОЛ: прыгает в ДРУГОЙ угол, явно мимо мяча
+        keeper.diveTo = keeper.aimX < 0.5
+          ? 0.72 + Math.random() * 0.16              // мяч слева -> вратарь вправо
+          : 0.28 - Math.random() * 0.16;             // мяч справа -> вратарь влево
+        keeper.diveY = 0.5;                          // ушёл не туда по высоте
+      }
       hideBanner();
     }
   }
@@ -291,8 +303,9 @@
       ball.x = keeper.shotFrom.x + (keeper.shotTo.x - keeper.shotFrom.x) * k;
       ball.y = keeper.shotFrom.y + (keeper.shotTo.y - keeper.shotFrom.y) * k - Math.sin(k * Math.PI) * 30;
       ball.spin = 16;
-      // вратарь летит в свою сторону
-      keeper.keeperX += (keeper.diveTo - keeper.keeperX) * Math.min(1, dt * 8);
+      // вратарь решительно прыгает (на сейв — на мяч, на гол — мимо)
+      keeper.keeperX += (keeper.diveTo - keeper.keeperX) * Math.min(1, dt * 11);
+      keeper.keeperY += (keeper.diveY  - keeper.keeperY) * Math.min(1, dt * 11);
       if (k >= 1) {
         keeper.phase = 'result';
         keeper.t = 0;
@@ -456,10 +469,10 @@
     rect(g.x + g.w, g.y - 4, 4, g.h + 8, '#ffffff');
     rect(g.x - 4, g.y - 4, g.w + 8, 4, '#ffffff');
 
-    // прицел
-    if (keeper.phase === 'ready' || keeper.phase === 'aim') {
+    // прицел (видим пока целимся и пока летит мяч — чтобы видеть попадание)
+    if (keeper.phase === 'aim' || keeper.phase === 'ready' || keeper.phase === 'shoot') {
       const ax = g.x + keeper.aimX * g.w;
-      const ay = g.y + g.h * 0.5;
+      const ay = g.y + keeper.aimY * g.h;
       ctx.strokeStyle = '#ff4d4d';
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(ax, ay, 8, 0, Math.PI * 2); ctx.stroke();
@@ -468,29 +481,34 @@
     }
 
     // вратарь
-    drawKeeper(g.x + keeper.keeperX * g.w, g.y + g.h - 4);
+    // cx/cy — центр груди вратаря (двигается и по X, и по Y)
+    drawKeeper(g.x + keeper.keeperX * g.w, g.y + keeper.keeperY * g.h);
   }
 
-  function drawKeeper(cx, footY) {
-    const diving = keeper.phase === 'shoot';
-    const wave = Math.sin(keeper.armWave) * 6;
-    // тело
-    rect(cx - 7, footY - 30, 14, 22, '#d8362f');   // майка
-    rect(cx - 7, footY - 9, 6, 9, '#222');          // ноги
-    rect(cx + 1, footY - 9, 6, 9, '#222');
+  function drawKeeper(cx, cy) {
+    const diving = keeper.phase === 'shoot' || keeper.phase === 'result';
+    const wave = Math.sin(keeper.armWave) * 5;
+    // ноги
+    rect(cx - 7, cy + 9, 6, 9, '#222');
+    rect(cx + 1, cy + 9, 6, 9, '#222');
+    // майка
+    rect(cx - 7, cy - 11, 14, 20, '#d8362f');
     // голова
-    rect(cx - 5, footY - 40, 10, 10, '#f0c090');
-    // руки (машут, либо в прыжке — в стороны)
-    ctx.fillStyle = '#f0c090';
+    rect(cx - 5, cy - 22, 10, 10, '#f0c090');
+    // руки + перчатки
     if (diving) {
-      rect(cx - 22, footY - 34, 16, 5, '#f0c090');
-      rect(cx + 6, footY - 34, 16, 5, '#f0c090');
+      // тянется в обе стороны (в прыжке)
+      rect(cx - 24, cy - 14, 17, 5, '#f0c090');   // левая рука
+      rect(cx + 7,  cy - 14, 17, 5, '#f0c090');   // правая рука
+      rect(cx - 28, cy - 16, 6, 8, '#ffffff');    // левая перчатка
+      rect(cx + 22, cy - 16, 6, 8, '#ffffff');    // правая перчатка
     } else {
-      rect(cx - 16, footY - 34 + wave, 10, 5, '#f0c090');
-      rect(cx + 6, footY - 34 - wave, 10, 5, '#f0c090');
+      // машет руками (ждёт удар)
+      rect(cx - 16, cy - 12 + wave, 10, 5, '#f0c090');
+      rect(cx + 6,  cy - 12 - wave, 10, 5, '#f0c090');
+      rect(cx - 19, cy - 14 + wave, 5, 7, '#ffffff');
+      rect(cx + 15, cy - 16 - wave, 5, 7, '#ffffff');
     }
-    // перчатки
-    ctx.fillStyle = '#fff';
   }
 
   // -- Мяч (классический, крутится)
