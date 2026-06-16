@@ -1,0 +1,105 @@
+/* ===== Набивалка — ретро 16-бит стиль ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0b0b14;
+  font-family: 'Press Start 2P', 'Courier New', monospace;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+
+#game-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Канвас тянется на весь экран, пиксели — чёткие (ретро) */
+#game {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #1a1030;
+}
+
+/* ---------- HUD ---------- */
+#hud {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 14px;
+  pointer-events: none;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000;
+}
+#hud-left  { text-align: left; }
+#hud-right { text-align: right; }
+
+#score { font-size: 22px; color: #ffe34d; }
+#combo, #next-keeper { font-size: 8px; margin-top: 6px; color: #cde7ff; }
+#lives { font-size: 16px; letter-spacing: 2px; }
+
+/* ---------- Баннер по центру ---------- */
+#banner {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1.6;
+  text-shadow: 3px 3px 0 #000;
+  pointer-events: none;
+  width: 90%;
+}
+#banner .big { font-size: 30px; color: #ffe34d; }
+
+/* ---------- Экраны (старт / гейм-овер) ---------- */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  text-align: center;
+  color: #fff;
+  background: rgba(10, 8, 24, 0.82);
+  padding: 24px;
+}
+.title {
+  font-size: 30px;
+  line-height: 1.5;
+  color: #ffe34d;
+  text-shadow: 3px 3px 0 #c0392b;
+}
+.sub { font-size: 12px; line-height: 1.6; color: #cde7ff; }
+.sub.small { font-size: 9px; color: #8fa9c4; }
+.hint { font-size: 9px; color: #8fa9c4; margin-top: 4px; }
+
+.btn {
+  font-family: inherit;
+  font-size: 14px;
+  color: #1a1030;
+  background: #ffe34d;
+  border: none;
+  border-bottom: 5px solid #b39316;
+  padding: 16px 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.05s;
+}
+.btn:active { transform: translateY(3px); border-bottom-width: 2px; }
+
+.hidden { display: none !important; }

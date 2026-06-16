@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>⚽ Набивалка</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="game-wrap">
+    <canvas id="game"></canvas>
+
+    <!-- HUD поверх канваса -->
+    <div id="hud" class="hidden">
+      <div id="hud-left">
+        <div id="score">0</div>
+        <div id="combo">УДАРЫ: 0</div>
+      </div>
+      <div id="hud-right">
+        <div id="lives">❤❤❤</div>
+        <div id="next-keeper">ВРАТАРЬ ЧЕРЕЗ 20</div>
+      </div>
+    </div>
+
+    <!-- Подсказка по центру (вратарь и т.п.) -->
+    <div id="banner" class="hidden"></div>
+
+    <!-- Стартовый экран -->
+    <div id="screen-start" class="screen">
+      <div class="title">⚽<br>НАБИВАЛКА</div>
+      <div class="sub">набивай мяч • не урони • забей вратарю</div>
+      <button id="btn-start" class="btn">ИГРАТЬ</button>
+      <div class="hint">тап по экрану = удар</div>
+    </div>
+
+    <!-- Экран конца игры -->
+    <div id="screen-over" class="screen hidden">
+      <div class="title">КОНЕЦ<br>ИГРЫ</div>
+      <div class="sub">Очки: <span id="final-score">0</span></div>
+      <div class="sub small">Рекорд: <span id="best-score">0</span></div>
+      <button id="btn-restart" class="btn">ЕЩЁ РАЗ</button>
+    </div>
+  </div>
+
+  <script src="js/game.js"></script>
+</body>
+</html>
