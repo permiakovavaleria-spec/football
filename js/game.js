@@ -47,7 +47,7 @@
   // Настройки звука (сохраняются между сессиями)
   const clamp01 = (v) => Math.max(0, Math.min(1, v));
   const settings = {
-    volume:  clamp01(parseFloat(localStorage.getItem('nabivalka_vol') ?? '0.7')),
+    volume:  clamp01(parseFloat(localStorage.getItem('nabivalka_vol') ?? '0.3')),
     musicOn: localStorage.getItem('nabivalka_music') !== '0'
   };
   function saveSettings() {
