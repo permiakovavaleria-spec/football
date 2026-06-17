@@ -44,6 +44,17 @@
   // ---------------------------------------------------------------
   //  Звуки (грузятся лениво, без файла — просто молчат)
   // ---------------------------------------------------------------
+  // Настройки звука (сохраняются между сессиями)
+  const clamp01 = (v) => Math.max(0, Math.min(1, v));
+  const settings = {
+    volume:  clamp01(parseFloat(localStorage.getItem('nabivalka_vol') ?? '0.7')),
+    musicOn: localStorage.getItem('nabivalka_music') !== '0'
+  };
+  function saveSettings() {
+    localStorage.setItem('nabivalka_vol', settings.volume);
+    localStorage.setItem('nabivalka_music', settings.musicOn ? '1' : '0');
+  }
+
   const Sound = {
     bank: {},
     load(name, file) {
@@ -56,7 +67,7 @@
       if (!a) return;
       try {
         const node = a.cloneNode();   // клон — чтобы звуки накладывались
-        node.volume = vol;
+        node.volume = clamp01(vol * settings.volume);   // общая громкость
         node.play().catch(() => {});
       } catch (e) { /* нет файла — молчим */ }
     }
@@ -66,6 +77,24 @@
   Sound.load('whistle', 'whistle.mp3');  // свист толпы (уронил мяч)
   Sound.load('life',    'life.mp3');     // +жизнь за 100 очков
   Sound.load('save',    'save.mp3');     // вратарь поймал (опционально)
+
+  // Фоновая музыка — зацикленная, чуть тише звуков
+  const Music = {
+    el: new Audio('assets/sounds/music.mp3'),
+    init() { this.el.loop = true; this.el.preload = 'auto'; this.apply(); },
+    apply() { this.el.volume = settings.musicOn ? clamp01(settings.volume * 0.55) : 0; },
+    start() {                                  // вызывать после жеста пользователя
+      this.apply();
+      if (settings.musicOn) this.el.play().catch(() => {});
+    },
+    toggle() {
+      settings.musicOn = !settings.musicOn;
+      this.apply();
+      if (settings.musicOn) this.el.play().catch(() => {}); else this.el.pause();
+      saveSettings();
+    }
+  };
+  Music.init();
 
   // ---------------------------------------------------------------
   //  Состояние игры
@@ -147,11 +176,15 @@
     ball.x = 150; ball.y = 150; ball.vy = 0; ball.vx = 0; ball.angle = 0; ball.spin = 6;
     footKick = 0;
     state = STATE.PLAY;
+    paused = false;
     el('screen-start').classList.add('hidden');
     el('screen-over').classList.add('hidden');
+    el('screen-settings').classList.add('hidden');
     hud.classList.remove('hidden');
+    el('btn-settings').classList.remove('hidden');   // показать шестерёнку
     hideBanner();
     updateHUD();
+    Music.start();                                    // музыка — после жеста (клик ИГРАТЬ)
   }
 
   function gameOver() {
@@ -165,11 +198,53 @@
     el('best-score').textContent = game.best;
     el('screen-over').classList.remove('hidden');
     hud.classList.add('hidden');
+    el('btn-settings').classList.add('hidden');
     hideBanner();
   }
 
   el('btn-start').addEventListener('click', (e) => { e.stopPropagation(); startGame(); });
   el('btn-restart').addEventListener('click', (e) => { e.stopPropagation(); startGame(); });
+
+  // ---------------------------------------------------------------
+  //  Пауза / настройки
+  // ---------------------------------------------------------------
+  let paused = false;
+
+  function openSettings() {
+    if (state !== STATE.PLAY && state !== STATE.KEEPER) return;
+    paused = true;
+    syncSettingsUI();
+    el('screen-settings').classList.remove('hidden');
+  }
+  function closeSettings() {
+    paused = false;
+    last = 0;                                  // сброс, чтобы dt не скакнул
+    el('screen-settings').classList.add('hidden');
+  }
+
+  function syncSettingsUI() {
+    const filled = Math.round(settings.volume * 10);
+    let cells = '';
+    for (let i = 0; i < 10; i++) cells += '<span class="cell' + (i < filled ? ' on' : '') + '"></span>';
+    el('vol-bar').innerHTML = cells;
+    const mb = el('btn-music');
+    mb.textContent = 'МУЗЫКА: ' + (settings.musicOn ? 'ВКЛ' : 'ВЫКЛ');
+    mb.classList.toggle('off', !settings.musicOn);
+  }
+
+  function changeVolume(delta) {
+    settings.volume = clamp01(Math.round((settings.volume + delta) * 10) / 10);
+    Music.apply();
+    saveSettings();
+    syncSettingsUI();
+    Sound.play('kick', 1);                     // щелчок — чтобы слышно громкость
+  }
+
+  el('btn-settings').addEventListener('click', (e) => { e.stopPropagation(); openSettings(); });
+  el('btn-resume').addEventListener('click', (e) => { e.stopPropagation(); closeSettings(); });
+  el('vol-down').addEventListener('click', (e) => { e.stopPropagation(); changeVolume(-0.1); });
+  el('vol-up').addEventListener('click', (e) => { e.stopPropagation(); changeVolume(+0.1); });
+  el('btn-music').addEventListener('click', (e) => { e.stopPropagation(); Music.toggle(); syncSettingsUI(); });
 
   // ---------------------------------------------------------------
   //  Ввод (тап / клик)
@@ -183,6 +258,7 @@
   }
 
   function onTap(wx, wy) {
+    if (paused) return;                         // на паузе тапы по полю не работают
     if (state === STATE.PLAY) {
       tryKick();
     } else if (state === STATE.KEEPER) {
@@ -576,9 +652,11 @@
     last = ts;
     if (dt > 0.05) dt = 0.05;             // защита от больших скачков
 
-    // -- update
-    if (state === STATE.PLAY)  updatePlay(dt);
-    if (state === STATE.KEEPER) updateKeeper(dt);
+    // -- update (на паузе мир замирает, но продолжаем рисовать)
+    if (!paused) {
+      if (state === STATE.PLAY)  updatePlay(dt);
+      if (state === STATE.KEEPER) updateKeeper(dt);
+    }
 
     // -- draw
     drawBackground(state === STATE.KEEPER);

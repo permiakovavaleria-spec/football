@@ -102,4 +102,53 @@ html, body {
 }
 .btn:active { transform: translateY(3px); border-bottom-width: 2px; }
 
+/* ---------- Кнопка настроек (шестерёнка) ---------- */
+#btn-settings {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  line-height: 40px;
+  text-align: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 0;
+  z-index: 5;
+}
+#btn-settings:active { transform: translateX(-50%) scale(0.9); }
+
+/* ---------- Настройки: громкость ---------- */
+.setting { text-align: center; }
+.setting-label { font-size: 11px; color: #cde7ff; margin-bottom: 12px; }
+.vol-row { display: flex; align-items: center; gap: 14px; justify-content: center; }
+.vol-bar { display: flex; gap: 3px; }
+.vol-bar .cell {
+  width: 12px; height: 22px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 2px;
+}
+.vol-bar .cell.on { background: #ffe34d; }
+
+.btn-sm {
+  font-family: inherit;
+  font-size: 18px;
+  color: #1a1030;
+  background: #ffe34d;
+  border: none;
+  border-bottom: 4px solid #b39316;
+  width: 44px; height: 44px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn-sm:active { transform: translateY(2px); border-bottom-width: 1px; }
+
+.btn.toggle { background: #7ed957; border-bottom-color: #4f9e36; }
+.btn.toggle.off { background: #9aa6b2; border-bottom-color: #5f6b77; }
+
 .hidden { display: none !important; }

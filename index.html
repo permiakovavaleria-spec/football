@@ -24,8 +24,26 @@
       </div>
     </div>
 
+    <!-- Кнопка настроек/паузы (видна в игре) -->
+    <button id="btn-settings" class="hidden" aria-label="Настройки">⚙</button>
+
     <!-- Подсказка по центру (вратарь и т.п.) -->
     <div id="banner" class="hidden"></div>
+
+    <!-- Экран настроек / паузы -->
+    <div id="screen-settings" class="screen hidden">
+      <div class="title">ПАУЗА</div>
+      <div class="setting">
+        <div class="setting-label">ГРОМКОСТЬ</div>
+        <div class="vol-row">
+          <button id="vol-down" class="btn-sm">−</button>
+          <div id="vol-bar" class="vol-bar"></div>
+          <button id="vol-up" class="btn-sm">+</button>
+        </div>
+      </div>
+      <button id="btn-music" class="btn toggle">МУЗЫКА: ВКЛ</button>
+      <button id="btn-resume" class="btn">ПРОДОЛЖИТЬ</button>
+    </div>
 
     <!-- Стартовый экран -->
     <div id="screen-start" class="screen">
